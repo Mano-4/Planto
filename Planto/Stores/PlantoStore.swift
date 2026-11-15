@@ -57,6 +57,10 @@ final class PlantoStore: ObservableObject {
         defaults.set(completionDates, forKey: "planto.completionDates")
     }
 
+    func completionDate(for plant: Planto) -> Date? {
+        completionDates[plant.id.uuidString]
+    }
+
     private func validatedName(_ name: String) throws -> String {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { throw StoreError.emptyName }

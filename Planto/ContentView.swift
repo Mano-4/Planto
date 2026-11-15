@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var store = PlantoStore()
+    @State private var viewModel = PlantoViewModel()
     @AppStorage("planto.hasStarted") private var hasStarted = false
     @State private var showingReminder = false
 
@@ -9,13 +9,13 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 0) {
             PlantsHeader()
 
-            if let loadError = store.loadError {
+            if let loadError = viewModel.loadError {
                 Text(loadError)
                     .foregroundStyle(.red)
                     .padding()
             }
 
-            if hasStarted || !store.plants.isEmpty {
+            if hasStarted || !viewModel.plants.isEmpty {
                 MyPlantsView(onAdd: { showingReminder = true })
             } else {
                 WelcomeView(onSetReminder: { showingReminder = true })
@@ -27,8 +27,8 @@ struct ContentView: View {
         .tint(PlantoStyle.green)
         .sheet(isPresented: $showingReminder) {
             SetReminderView()
-                .environmentObject(store)
+                .environment(viewModel)
         }
-        .environmentObject(store)
+        .environment(viewModel)
     }
 }

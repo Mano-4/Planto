@@ -20,7 +20,7 @@ struct WelcomeView: View {
 
                 Text("Now all your plants will be in one place and we will help you take care of them :)🪴")
                     .font(.system(size: 16))
-                    .foregroundStyle(PlantoStyle.secondary)
+                    .foregroundStyle(PlantoStyle.messageSecondary)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 315)
                     .padding(.top, 25)
@@ -30,7 +30,7 @@ struct WelcomeView: View {
                         .font(.system(size: 17, weight: .medium))
                         .foregroundStyle(.white)
                         .frame(width: 280, height: 42)
-                        .background(PlantoStyle.green, in: Capsule())
+                        .background(PlantoStyle.buttonFill, in: Capsule())
                         .overlay(Capsule().strokeBorder(.white.opacity(0.25), lineWidth: 1))
                 }
                 .buttonStyle(.plain)

@@ -1,35 +1,34 @@
 import SwiftUI
 
 struct MyPlantsView: View {
-    @EnvironmentObject private var store: PlantoStore
+    @Environment(PlantoViewModel.self) private var viewModel
     @State private var editingPlant: Planto?
     @State private var reviewingCompleted = false
-    @State private var errorMessage = ""
-    @State private var showingError = false
     let onAdd: () -> Void
 
     var body: some View {
+        @Bindable var viewModel = viewModel
         TimelineView(.periodic(from: .now, by: 60)) { context in
-            let completedCount = store.plants.filter { store.isCompleted($0, on: context.date) }.count
+            let completedCount = viewModel.completedCount(on: context.date)
 
             ZStack(alignment: .bottomTrailing) {
-                if store.plants.isEmpty {
+                if viewModel.plants.isEmpty {
                     EmptyRemindersView()
-                } else if completedCount == store.plants.count && !reviewingCompleted {
+                } else if completedCount == viewModel.plants.count && !reviewingCompleted {
                     AllDoneView(onReview: { reviewingCompleted = true })
                 } else {
                     VStack(spacing: 0) {
-                        PlantProgressView(completed: completedCount, total: store.plants.count)
+                        PlantProgressView(completed: completedCount, total: viewModel.plants.count)
                             .padding(.top, 33)
                             .padding(.bottom, 50)
 
                         List {
-                            ForEach(store.plants) { plant in
+                            ForEach(viewModel.plants) { plant in
                                 PlantReminderRow(
                                     plant: plant,
-                                    isCompleted: store.isCompleted(plant, on: context.date),
+                                    isCompleted: viewModel.isCompleted(plant, on: context.date),
                                     onToggle: {
-                                        store.toggleCompletion(plant)
+                                        viewModel.toggleCompletion(plant)
                                         reviewingCompleted = false
                                     },
                                     onEdit: { editingPlant = plant }
@@ -39,12 +38,7 @@ struct MyPlantsView: View {
                                 .listRowSeparator(.hidden)
                                 .swipeActions {
                                     Button("Delete", role: .destructive) {
-                                        do {
-                                            try store.delete(plant)
-                                        } catch {
-                                            errorMessage = error.localizedDescription
-                                            showingError = true
-                                        }
+                                        viewModel.deleteReminder(plant)
                                     }
                                 }
                             }
@@ -63,12 +57,12 @@ struct MyPlantsView: View {
         }
         .sheet(item: $editingPlant) { plant in
             SetReminderView(plant: plant)
-                .environmentObject(store)
+                .environment(viewModel)
         }
-        .alert("Unable to Delete", isPresented: $showingError) {
+        .alert("Unable to Delete", isPresented: $viewModel.showingError) {
             Button("OK", role: .cancel) { }
         } message: {
-            Text(errorMessage)
+            Text(viewModel.errorMessage)
         }
     }
 }
@@ -88,10 +82,10 @@ private struct PlantProgressView: View {
             }
             GeometryReader { geometry in
                 Capsule()
-                    .fill(PlantoStyle.card)
+                    .fill(PlantoStyle.progressTrack)
                     .overlay(alignment: .leading) {
                         Capsule()
-                            .fill(PlantoStyle.brightGreen)
+                            .fill(PlantoStyle.progress)
                             .frame(width: geometry.size.width * CGFloat(completed) / CGFloat(max(total, 1)))
                     }
             }
@@ -116,7 +110,7 @@ private struct PlantReminderRow: View {
                 Button(action: onToggle) {
                     ZStack {
                         Circle()
-                            .strokeBorder(isCompleted ? PlantoStyle.brightGreen : PlantoStyle.secondary, lineWidth: 1)
+                            .strokeBorder(isCompleted ? PlantoStyle.brightGreen : PlantoStyle.listSecondary, lineWidth: 1)
                         if isCompleted {
                             Circle().fill(PlantoStyle.brightGreen)
                             Image(systemName: "checkmark")
@@ -140,13 +134,13 @@ private struct PlantReminderRow: View {
                             Text("in \(plant.room.rawValue)")
                         }
                             .font(.system(size: 15))
-                            .foregroundStyle(PlantoStyle.secondary)
+                            .foregroundStyle(PlantoStyle.listSecondary)
                         Text(plant.name)
                             .font(.system(size: 28))
-                            .foregroundStyle(isCompleted ? PlantoStyle.secondary : PlantoStyle.primary)
+                            .foregroundStyle(isCompleted ? PlantoStyle.listSecondary : PlantoStyle.primary)
                         HStack(spacing: 10) {
-                            PlantTag(text: plant.light.rawValue, symbol: "sun.max", color: Color(red: 0.67, green: 0.62, blue: 0.34))
-                            PlantTag(text: plant.waterAmount.rawValue, symbol: "drop", color: Color(red: 0.62, green: 0.79, blue: 0.84))
+                            PlantTag(text: plant.light.rawValue, symbol: "sun.max", color: Color(red: 148 / 255, green: 144 / 255, blue: 100 / 255))
+                            PlantTag(text: plant.waterAmount.rawValue, symbol: "drop", color: Color(red: 146 / 255, green: 174 / 255, blue: 181 / 255))
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -158,7 +152,7 @@ private struct PlantReminderRow: View {
             .padding(.vertical, 12)
 
             Rectangle()
-                .fill(PlantoStyle.card)
+                .fill(PlantoStyle.divider)
                 .frame(height: 0.5)
         }
     }
@@ -179,7 +173,7 @@ private struct PlantTag: View {
             .foregroundStyle(color)
             .padding(.horizontal, 6)
             .padding(.vertical, 3)
-            .background(PlantoStyle.surface, in: RoundedRectangle(cornerRadius: 7))
+            .background(PlantoStyle.tagBackground, in: RoundedRectangle(cornerRadius: 7))
     }
 }
 
@@ -188,7 +182,7 @@ private struct PlantTag: View {
 }
 
 private struct MyPlantsPreview: View {
-    @StateObject private var store: PlantoStore
+    @State private var viewModel: PlantoViewModel
 
     init() {
         guard let defaults = UserDefaults(suiteName: "planto.visualPreview") else {
@@ -202,7 +196,7 @@ private struct MyPlantsPreview: View {
             try? store.add(plant)
             if name != "Monstera" { store.toggleCompletion(plant) }
         }
-        _store = StateObject(wrappedValue: store)
+        _viewModel = State(initialValue: PlantoViewModel(store: store))
     }
 
     var body: some View {
@@ -210,7 +204,7 @@ private struct MyPlantsPreview: View {
             PlantsHeader()
             MyPlantsView(onAdd: {})
         }
-        .environmentObject(store)
+        .environment(viewModel)
         .background(PlantoStyle.background)
         .preferredColorScheme(.dark)
     }
