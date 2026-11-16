@@ -1,3 +1,10 @@
+//
+//  PlantoStore.swift
+//  Planto
+//
+//  Created by mona almogren on 06/06/1448 AH.
+//
+
 import Foundation
 import Combine
 
