@@ -2,7 +2,6 @@ import SwiftUI
 
 struct MyPlantsView: View {
     @Environment(PlantoViewModel.self) private var viewModel
-    @State private var editingPlant: Planto?
     @State private var reviewingCompleted = false
     let onAdd: () -> Void
 
@@ -31,15 +30,19 @@ struct MyPlantsView: View {
                                         viewModel.toggleCompletion(plant)
                                         reviewingCompleted = false
                                     },
-                                    onEdit: { editingPlant = plant }
+                                    onEdit: { viewModel.editingPlant = plant }
                                 )
                                 .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
                                 .listRowBackground(PlantoStyle.background)
                                 .listRowSeparator(.hidden)
-                                .swipeActions {
-                                    Button("Delete", role: .destructive) {
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    Button(role: .destructive) {
                                         viewModel.deleteReminder(plant)
+                                    } label: {
+                                        Label("Delete Reminder", systemImage: "trash")
+                                            .labelStyle(.iconOnly)
                                     }
+                                    .tint(.red)
                                 }
                             }
                         }
@@ -51,11 +54,22 @@ struct MyPlantsView: View {
                 }
 
                 AddPlantButton(action: onAdd)
+                    #if DEBUG
+                    .contextMenu {
+                        if let plant = viewModel.plants.first {
+                            Button("Test Notification (5 seconds)", systemImage: "bell") {
+                                Task {
+                                    await PlantNotifications.shared.sendTestNotification(for: plant)
+                                }
+                            }
+                        }
+                    }
+                    #endif
                     .padding(.trailing, 30)
                     .padding(.bottom, 7)
             }
         }
-        .sheet(item: $editingPlant) { plant in
+        .sheet(item: $viewModel.editingPlant) { plant in
             SetReminderView(plant: plant)
                 .environment(viewModel)
         }

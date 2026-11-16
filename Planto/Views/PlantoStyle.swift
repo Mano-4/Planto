@@ -12,10 +12,6 @@ enum PlantoStyle {
     static let divider = Color(red: 34 / 255, green: 34 / 255, blue: 36 / 255)
     static let listSecondary = Color(red: 152 / 255, green: 152 / 255, blue: 152 / 255)
     static let messageSecondary = Color(red: 145 / 255, green: 145 / 255, blue: 133 / 255)
-    static let buttonFill = LinearGradient(
-        colors: [Color(red: 51 / 255, green: 128 / 255, blue: 105 / 255), green],
-        startPoint: .top, endPoint: .bottom
-    )
     static let brightGreen = Color(red: 40 / 255, green: 224 / 255, blue: 168 / 255)
     static let secondary = Color(red: 142 / 255, green: 142 / 255, blue: 147 / 255)
     static let primary = Color.white
@@ -45,8 +41,7 @@ struct AddPlantButton: View {
                 .font(.system(size: 25, weight: .regular))
                 .foregroundStyle(.white)
                 .frame(width: 44, height: 44)
-                .background(PlantoStyle.buttonFill, in: Circle())
-                .overlay(Circle().strokeBorder(.white.opacity(0.25), lineWidth: 1))
+                .glassEffect(.regular.tint(PlantoStyle.green).interactive(), in: Circle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Add plant reminder")

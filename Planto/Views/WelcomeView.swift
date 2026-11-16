@@ -30,8 +30,7 @@ struct WelcomeView: View {
                         .font(.system(size: 17, weight: .medium))
                         .foregroundStyle(.white)
                         .frame(width: 280, height: 42)
-                        .background(PlantoStyle.buttonFill, in: Capsule())
-                        .overlay(Capsule().strokeBorder(.white.opacity(0.25), lineWidth: 1))
+                        .glassEffect(.regular.tint(PlantoStyle.green).interactive(), in: Capsule())
                 }
                 .buttonStyle(.plain)
                 .padding(.top, 105)

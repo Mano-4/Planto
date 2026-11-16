@@ -8,28 +8,34 @@ final class PlantoViewModel {
     private(set) var loadError: String?
     var errorMessage = ""
     var showingError = false
+    var editingPlant: Planto?
 
     private var completionDates: [UUID: Date] = [:]
     private let store: PlantoStore
+    private let notifications: PlantNotifications?
 
     init(store: PlantoStore? = nil) {
         self.store = store ?? PlantoStore()
+        notifications = store == nil ? .shared : nil
         refresh()
     }
 
     func add(_ plant: Planto) throws {
         try store.add(plant)
         refresh()
+        synchronizeNotifications(requestPermission: true)
     }
 
     func update(_ plant: Planto) throws {
         try store.update(plant)
         refresh()
+        synchronizeNotifications(requestPermission: true)
     }
 
     func delete(_ plant: Planto) throws {
         try store.delete(plant)
         refresh()
+        synchronizeNotifications()
     }
 
     func deleteReminder(_ plant: Planto) {
@@ -44,6 +50,7 @@ final class PlantoViewModel {
     func toggleCompletion(_ plant: Planto) {
         store.toggleCompletion(plant)
         refresh()
+        synchronizeNotifications()
     }
 
     func isCompleted(_ plant: Planto, on date: Date = .now) -> Bool {
@@ -53,6 +60,11 @@ final class PlantoViewModel {
 
     func completedCount(on date: Date = .now) -> Int {
         plants.filter { isCompleted($0, on: date) }.count
+    }
+
+    func synchronizeNotifications(requestPermission: Bool = false) {
+        guard loadError == nil else { return }
+        notifications?.synchronize(plants: plants, completionDates: completionDates, requestPermission: requestPermission)
     }
 
     private func refresh() {

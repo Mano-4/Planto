@@ -111,8 +111,7 @@ private struct ReminderNavigationBar: View {
                 Image(systemName: "xmark")
                     .font(.system(size: 20))
                     .frame(width: 44, height: 44)
-                    .background(PlantoStyle.card, in: Circle())
-                    .overlay(Circle().strokeBorder(.white.opacity(0.2), lineWidth: 0.5))
+                    .glassEffect(.regular.interactive(), in: Circle())
             }
             .accessibilityLabel("Cancel")
             Spacer()
@@ -120,8 +119,7 @@ private struct ReminderNavigationBar: View {
                 Image(systemName: "checkmark")
                     .font(.system(size: 25, weight: .medium))
                     .frame(width: 44, height: 44)
-                    .background(PlantoStyle.buttonFill, in: Circle())
-                    .overlay(Circle().strokeBorder(.white.opacity(0.3), lineWidth: 1))
+                    .glassEffect(.regular.tint(PlantoStyle.green).interactive(canSave), in: Circle())
                     .opacity(canSave ? 1 : 0.5)
             }
             .disabled(!canSave)

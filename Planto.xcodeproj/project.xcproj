@@ -12,8 +12,6 @@
   },
   "files": [
     { "kind": "folder", "path": "Planto", "target-membership": [ "Planto" ] },
-    { "kind": "folder", "path": "PlantoTests", "target-membership": [ "PlantoTests" ] },
-    { "kind": "folder", "path": "PlantoUITests", "target-membership": [ "PlantoUITests" ] },
     {
       "kind": "group",
       "name": "Products",
