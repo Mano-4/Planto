@@ -4,7 +4,6 @@ enum PlantoStyle {
     static let background = Color.black
     static let surface = Color(red: 28 / 255, green: 28 / 255, blue: 30 / 255)
     static let card = Color(red: 44 / 255, green: 44 / 255, blue: 46 / 255)
-    // Sampled from the rendered Sketch reference; controls differ from the mascot green.
     static let green = Color(red: 41 / 255, green: 118 / 255, blue: 95 / 255)
     static let progress = Color(red: 89 / 255, green: 166 / 255, blue: 143 / 255)
     static let progressTrack = Color(red: 38 / 255, green: 38 / 255, blue: 38 / 255)

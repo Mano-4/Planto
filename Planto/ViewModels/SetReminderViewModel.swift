@@ -21,7 +21,6 @@ final class SetReminderViewModel {
         !draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    @discardableResult
     func save(using plants: PlantoViewModel) -> Bool {
         guard isNameValid else {
             errorMessage = "Enter a plant name."
@@ -42,7 +41,6 @@ final class SetReminderViewModel {
         }
     }
 
-    @discardableResult
     func delete(using plants: PlantoViewModel) -> Bool {
         guard isEditing else { return false }
         do {

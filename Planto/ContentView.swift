@@ -49,7 +49,7 @@ struct ContentView: View {
         guard let id = notifications.selectedPlantID else { return }
         if showingReminder {
             showingReminder = false
-            return // Route after the add sheet has finished dismissing.
+            return
         }
         viewModel.editingPlant = nil
         if viewModel.plants.contains(where: { $0.id == id }) {

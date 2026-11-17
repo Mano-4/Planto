@@ -1,10 +1,3 @@
-//
-//  PlantoApp.swift
-//  Planto
-//
-//  Created by mona almogren on 29/05/1448 AH.
-//
-
 import SwiftUI
 
 @main
