@@ -71,14 +71,35 @@ final class PlantNotifications: NSObject, UNUserNotificationCenterDelegate {
             return
         }
 
+        let defaults = UserDefaults.standard
+        var anchors = defaults.dictionary(forKey: "planto.notificationAnchors") as? [String: Date] ?? [:]
+        var submitted = defaults.dictionary(forKey: "planto.notificationCycles") as? [String: String] ?? [:]
+        let plantIDs = Set(plants.map { $0.id.uuidString })
+        anchors = anchors.filter { plantIDs.contains($0.key) }
+        submitted = submitted.filter { plantIDs.contains($0.key) }
         for plant in plants {
-            let request = Self.makeRequest(for: plant, wateredAt: completionDates[plant.id])
+            let key = plant.id.uuidString
+            let current = existing.first { $0.identifier == Self.identifier(for: plant.id) }
+            if anchors[key] == nil {
+                // Preserve an existing countdown when migrating from interval reminders.
+                let next = (current?.trigger as? UNTimeIntervalNotificationTrigger)?.nextTriggerDate()
+                anchors[key] = next?.addingTimeInterval(-plant.wateringDays.interval) ?? .now
+            }
+            defaults.set(anchors, forKey: "planto.notificationAnchors")
+            let anchor = completionDates[plant.id] ?? anchors[key] ?? .now
+            let due = Self.nextWateringDate(for: plant, anchor: anchor)
+            let request = Self.makeRequest(for: plant, wateredAt: anchor)
+            let cycle = request.content.userInfo["schedule"] as? String
+            // A delivered/dismissed overdue reminder must not reappear every app launch.
+            if current == nil, due <= .now, submitted[key] == cycle { continue }
             // Do not restart the countdown on launch or when another plant changes.
             if let current = existing.first(where: { $0.identifier == request.identifier }),
                current.content.userInfo["schedule"] as? String == request.content.userInfo["schedule"] as? String {
                 continue
             }
             try await center.add(request)
+            submitted[key] = cycle
+            defaults.set(submitted, forKey: "planto.notificationCycles")
             center.removeDeliveredNotifications(withIdentifiers: [request.identifier])
         }
     }
@@ -111,18 +132,27 @@ final class PlantNotifications: NSObject, UNUserNotificationCenterDelegate {
         prefix + id.uuidString
     }
 
+    static func nextWateringDate(for plant: Planto, anchor: Date) -> Date {
+        Calendar.current.date(byAdding: .day, value: Int(plant.wateringDays.interval / 86_400), to: anchor)
+            ?? anchor.addingTimeInterval(plant.wateringDays.interval)
+    }
+
     static func makeRequest(for plant: Planto, wateredAt: Date?) -> UNNotificationRequest {
         let content = UNMutableNotificationContent()
         content.title = "Planto"
         content.body = "Hey! let's water your plant"
         content.sound = .default
         content.threadIdentifier = plant.id.uuidString
-        // Include the name so edits also refresh pending notification metadata.
         content.userInfo = [
             "plantID": plant.id.uuidString,
-            "schedule": "\(plant.name)|\(plant.wateringDays.rawValue)|\(wateredAt?.timeIntervalSince1970 ?? 0)"
+            "schedule": "v2|\(plant.wateringDays.rawValue)|\(wateredAt?.timeIntervalSince1970 ?? 0)"
         ]
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: plant.wateringDays.interval, repeats: true)
+        let due = nextWateringDate(for: plant, anchor: wateredAt ?? .now)
+        let fireDate = max(due, Date.now.addingTimeInterval(1))
+        var components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: fireDate)
+        components.calendar = Calendar.current
+        components.timeZone = Calendar.current.timeZone
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
         return UNNotificationRequest(identifier: identifier(for: plant.id), content: content, trigger: trigger)
     }
 

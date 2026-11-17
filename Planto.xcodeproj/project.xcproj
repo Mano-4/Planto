@@ -12,6 +12,7 @@
   },
   "files": [
     { "kind": "folder", "path": "Planto", "target-membership": [ "Planto" ] },
+    { "path": "README.md", "target-membership": [ "Planto/resources" ] },
     {
       "kind": "group",
       "name": "Products",

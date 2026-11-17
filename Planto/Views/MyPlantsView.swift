@@ -13,7 +13,7 @@ struct MyPlantsView: View {
             ZStack(alignment: .bottomTrailing) {
                 if viewModel.plants.isEmpty {
                     EmptyRemindersView()
-                } else if completedCount == viewModel.plants.count && !reviewingCompleted {
+                } else if completedCount == viewModel.plants.count && !reviewingCompleted && viewModel.notificationPlantID == nil {
                     AllDoneView(onReview: { reviewingCompleted = true })
                 } else {
                     VStack(spacing: 0) {
@@ -21,35 +21,44 @@ struct MyPlantsView: View {
                             .padding(.top, 33)
                             .padding(.bottom, 50)
 
-                        List {
-                            ForEach(viewModel.plants) { plant in
-                                PlantReminderRow(
-                                    plant: plant,
-                                    isCompleted: viewModel.isCompleted(plant, on: context.date),
-                                    onToggle: {
-                                        viewModel.toggleCompletion(plant)
-                                        reviewingCompleted = false
-                                    },
-                                    onEdit: { viewModel.editingPlant = plant }
-                                )
-                                .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
-                                .listRowBackground(PlantoStyle.background)
-                                .listRowSeparator(.hidden)
-                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                    Button(role: .destructive) {
-                                        viewModel.deleteReminder(plant)
-                                    } label: {
-                                        Label("Delete Reminder", systemImage: "trash")
-                                            .labelStyle(.iconOnly)
+                        ScrollViewReader { proxy in
+                            List {
+                                ForEach(viewModel.plants) { plant in
+                                    PlantReminderRow(
+                                        plant: plant,
+                                        isCompleted: viewModel.isCompleted(plant, on: context.date),
+                                        onToggle: {
+                                            viewModel.toggleCompletion(plant)
+                                            reviewingCompleted = false
+                                        },
+                                        onEdit: { viewModel.editingPlant = plant }
+                                    )
+                                    .id(plant.id)
+                                    .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                                    .listRowBackground(PlantoStyle.background)
+                                    .listRowSeparator(.hidden)
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                        Button(role: .destructive) {
+                                            viewModel.deleteReminder(plant)
+                                        } label: {
+                                            Label("Delete Reminder", systemImage: "trash")
+                                                .labelStyle(.iconOnly)
+                                        }
+                                        .tint(.red)
                                     }
-                                    .tint(.red)
                                 }
                             }
+                            .listStyle(.plain)
+                            .scrollContentBackground(.hidden)
+                            .contentMargins(.top, 0)
+                            .padding(.bottom, 60)
+                            .onChange(of: viewModel.notificationPlantID, initial: true) { _, id in
+                                guard let id else { return }
+                                reviewingCompleted = true
+                                proxy.scrollTo(id, anchor: .center)
+                                viewModel.notificationPlantID = nil
+                            }
                         }
-                        .listStyle(.plain)
-                        .scrollContentBackground(.hidden)
-                        .contentMargins(.top, 0)
-                        .padding(.bottom, 60)
                     }
                 }
 
@@ -57,7 +66,7 @@ struct MyPlantsView: View {
                     #if DEBUG
                     .contextMenu {
                         if let plant = viewModel.plants.first {
-                            Button("Test Notification (5 seconds)", systemImage: "bell") {
+                            Button("Test Notification: \(plant.name) (5 seconds)", systemImage: "bell") {
                                 Task {
                                     await PlantNotifications.shared.sendTestNotification(for: plant)
                                 }

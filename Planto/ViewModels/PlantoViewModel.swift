@@ -9,6 +9,7 @@ final class PlantoViewModel {
     var errorMessage = ""
     var showingError = false
     var editingPlant: Planto?
+    var notificationPlantID: UUID?
 
     private var completionDates: [UUID: Date] = [:]
     private let store: PlantoStore
