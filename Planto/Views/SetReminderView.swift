@@ -37,17 +37,81 @@ struct SetReminderView: View {
                     .padding(.top, 54)
 
                     VStack(spacing: 0) {
-                        ReminderPicker(title: "Room", symbol: "location", selection: $viewModel.draft.room)
+                        HStack(spacing: 6) {
+                            Image(systemName: "location").frame(width: 20)
+                            Text("Room")
+                            Spacer(minLength: 4)
+                            Picker("Room", selection: $viewModel.draft.room) {
+                                ForEach(Room.allCases) { option in
+                                    Text(option.rawValue).tag(option)
+                                }
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.menu)
+                            .tint(PlantoStyle.secondary)
+                        }
+                        .font(.system(size: 18))
+                        .foregroundStyle(PlantoStyle.primary)
+                        .padding(.horizontal, 16)
+                        .frame(height: 47)
                         Divider().padding(.leading, 16)
-                        ReminderPicker(title: "Light", symbol: "sun.max", selection: $viewModel.draft.light)
+                        HStack(spacing: 6) {
+                            Image(systemName: "sun.max").frame(width: 20)
+                            Text("Light")
+                            Spacer(minLength: 4)
+                            Picker("Light", selection: $viewModel.draft.light) {
+                                ForEach(Light.allCases) { option in
+                                    Text(option.rawValue).tag(option)
+                                }
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.menu)
+                            .tint(PlantoStyle.secondary)
+                        }
+                        .font(.system(size: 18))
+                        .foregroundStyle(PlantoStyle.primary)
+                        .padding(.horizontal, 16)
+                        .frame(height: 47)
                     }
                     .background(PlantoStyle.card, in: RoundedRectangle(cornerRadius: 30))
                     .padding(.top, 50)
 
                     VStack(spacing: 0) {
-                        ReminderPicker(title: "Watering Days", symbol: "drop", selection: $viewModel.draft.wateringDays)
+                        HStack(spacing: 6) {
+                            Image(systemName: "drop").frame(width: 20)
+                            Text("Watering Days")
+                            Spacer(minLength: 4)
+                            Picker("Watering Days", selection: $viewModel.draft.wateringDays) {
+                                ForEach(WateringDays.allCases) { option in
+                                    Text(option.rawValue).tag(option)
+                                }
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.menu)
+                            .tint(PlantoStyle.secondary)
+                        }
+                        .font(.system(size: 18))
+                        .foregroundStyle(PlantoStyle.primary)
+                        .padding(.horizontal, 16)
+                        .frame(height: 47)
                         Divider().padding(.leading, 16)
-                        ReminderPicker(title: "Water", symbol: "drop", selection: $viewModel.draft.waterAmount)
+                        HStack(spacing: 6) {
+                            Image(systemName: "drop").frame(width: 20)
+                            Text("Water")
+                            Spacer(minLength: 4)
+                            Picker("Water", selection: $viewModel.draft.waterAmount) {
+                                ForEach(WaterAmount.allCases) { option in
+                                    Text(option.rawValue).tag(option)
+                                }
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.menu)
+                            .tint(PlantoStyle.secondary)
+                        }
+                        .font(.system(size: 18))
+                        .foregroundStyle(PlantoStyle.primary)
+                        .padding(.horizontal, 16)
+                        .frame(height: 47)
                     }
                     .background(PlantoStyle.card, in: RoundedRectangle(cornerRadius: 30))
                     .padding(.top, 40)
@@ -133,35 +197,6 @@ private struct ReminderNavigationBar: View {
         }
         .buttonStyle(.plain)
         .foregroundStyle(PlantoStyle.primary)
-    }
-}
-
-private struct ReminderPicker<Option>: View
-where Option: CaseIterable & Identifiable & Hashable & RawRepresentable,
-      Option.RawValue == String {
-    let title: LocalizedStringKey
-    let symbol: String
-    @Binding var selection: Option
-
-    var body: some View {
-        HStack(spacing: 6) {
-            Image(systemName: symbol)
-                .frame(width: 20)
-            Text(title)
-            Spacer(minLength: 4)
-            Picker(title, selection: $selection) {
-                ForEach(Array(Option.allCases)) { option in
-                    Text(option.rawValue).tag(option)
-                }
-            }
-            .labelsHidden()
-            .pickerStyle(.menu)
-            .tint(PlantoStyle.secondary)
-        }
-        .font(.system(size: 18))
-        .foregroundStyle(PlantoStyle.primary)
-        .padding(.horizontal, 16)
-        .frame(height: 47)
     }
 }
 

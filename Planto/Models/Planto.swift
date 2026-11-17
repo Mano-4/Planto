@@ -36,6 +36,21 @@ enum WateringDays: String, CaseIterable, Codable, Identifiable {
     case every2Weeks = "Every 2 weeks"
 
     var id: String { rawValue }
+
+    var numberOfDays: Int {
+        switch self {
+        case .everyDay: return 1
+        case .every2Days: return 2
+        case .every3Days: return 3
+        case .onceAWeek: return 7
+        case .every10Days: return 10
+        case .every2Weeks: return 14
+        }
+    }
+
+    var interval: TimeInterval {
+        TimeInterval(numberOfDays * 24 * 60 * 60)
+    }
 }
 
 enum WaterAmount: String, CaseIterable, Codable, Identifiable {

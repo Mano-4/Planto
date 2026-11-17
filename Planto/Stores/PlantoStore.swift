@@ -1,18 +1,12 @@
-//
-//  PlantoStore.swift
-//  Planto
-//
-//  Created by mona almogren on 06/06/1448 AH.
-//
-
 import Foundation
-import Combine
+import Observation
 
 @MainActor
-final class PlantoStore: ObservableObject {
-    @Published private(set) var plants: [Planto] = []
-    @Published private(set) var loadError: String?
-    @Published private var completionDates: [String: Date] = [:]
+@Observable
+final class PlantoStore {
+    private(set) var plants: [Planto] = []
+    private(set) var loadError: String?
+    private var completionDates: [String: Date] = [:]
 
     private let defaults: UserDefaults
     private let storageKey = "planto.plants"
@@ -31,7 +25,9 @@ final class PlantoStore: ObservableObject {
     func add(_ plant: Planto) throws {
         var plant = plant
         plant.name = try validatedName(plant.name)
-        try persist(plants + [plant])
+        var updated = plants
+        updated.append(plant)
+        try persist(updated)
     }
 
     func update(_ plant: Planto) throws {
@@ -48,7 +44,7 @@ final class PlantoStore: ObservableObject {
         try persist(plants.filter { $0.id != plant.id })
     }
 
-    // Completion is stored separately to preserve the existing plant JSON schema.
+
     func isCompleted(_ plant: Planto, on date: Date = .now) -> Bool {
         guard let completed = completionDates[plant.id.uuidString] else { return false }
         return Calendar.current.isDate(completed, inSameDayAs: date)
@@ -75,7 +71,7 @@ final class PlantoStore: ObservableObject {
     }
 
     private func persist(_ updated: [Planto]) throws {
-        // Preserve unreadable saved data instead of replacing it with an empty collection.
+     
         guard loadError == nil else { throw StoreError.unreadableData }
         let data = try JSONEncoder().encode(updated)
         defaults.set(data, forKey: storageKey)

@@ -2,21 +2,6 @@ import Foundation
 import Observation
 import UserNotifications
 
-extension WateringDays {
-    var interval: TimeInterval {
-        let days: Int
-        switch self {
-        case .everyDay: days = 1
-        case .every2Days: days = 2
-        case .every3Days: days = 3
-        case .onceAWeek: days = 7
-        case .every10Days: days = 10
-        case .every2Weeks: days = 14
-        }
-        return TimeInterval(days * 24 * 60 * 60)
-    }
-}
-
 @MainActor
 @Observable
 final class PlantNotifications: NSObject, UNUserNotificationCenterDelegate {
@@ -34,13 +19,12 @@ final class PlantNotifications: NSObject, UNUserNotificationCenterDelegate {
         center.delegate = self
     }
 
-    // Serialize snapshots so a slow permission prompt cannot restore a deleted reminder.
     func synchronize(plants: [Planto], completionDates: [UUID: Date], requestPermission: Bool) {
         let previous = pendingWork
         pendingWork = Task {
             await previous?.value
             do {
-                try await reconcile(plants: plants, completionDates: completionDates, requestPermission: requestPermission)
+                try await updateReminders(plants: plants, completionDates: completionDates, requestPermission: requestPermission)
             } catch {
                 message = "Your plant was saved, but its notification could not be scheduled. " + error.localizedDescription
                 showingMessage = true
@@ -48,29 +32,13 @@ final class PlantNotifications: NSObject, UNUserNotificationCenterDelegate {
         }
     }
 
-    private func reconcile(plants: [Planto], completionDates: [UUID: Date], requestPermission: Bool) async throws {
+    private func updateReminders(plants: [Planto], completionDates: [UUID: Date], requestPermission: Bool) async throws {
         let existing = await center.pendingNotificationRequests()
-        let validIDs = Set(plants.map { Self.identifier(for: $0.id) })
-        let obsolete = existing.map(\.identifier).filter { $0.hasPrefix(Self.prefix) && !validIDs.contains($0) }
-        center.removePendingNotificationRequests(withIdentifiers: obsolete)
-        let delivered = await center.deliveredNotifications()
-        center.removeDeliveredNotifications(withIdentifiers: delivered.map { $0.request.identifier }
-            .filter { $0.hasPrefix(Self.prefix) && !validIDs.contains($0) })
-
+        await removeDeletedPlantNotifications(plants: plants, pending: existing)
         guard !plants.isEmpty else { return }
-        var status = await center.notificationSettings().authorizationStatus
-        if status == .notDetermined {
-            _ = try await center.requestAuthorization(options: [.alert, .sound])
-            status = await center.notificationSettings().authorizationStatus
-        }
-        guard status == .authorized || status == .provisional || status == .ephemeral else {
-            if requestPermission {
-                message = "Your plant is saved. Enable notifications for Planto in Settings to receive watering reminders."
-                showingMessage = true
-            }
-            return
-        }
+        guard try await hasPermission(showMessage: requestPermission) else { return }
 
+     
         let defaults = UserDefaults.standard
         var anchors = defaults.dictionary(forKey: "planto.notificationAnchors") as? [String: Date] ?? [:]
         var submitted = defaults.dictionary(forKey: "planto.notificationCycles") as? [String: String] ?? [:]
@@ -81,7 +49,6 @@ final class PlantNotifications: NSObject, UNUserNotificationCenterDelegate {
             let key = plant.id.uuidString
             let current = existing.first { $0.identifier == Self.identifier(for: plant.id) }
             if anchors[key] == nil {
-                // Preserve an existing countdown when migrating from interval reminders.
                 let next = (current?.trigger as? UNTimeIntervalNotificationTrigger)?.nextTriggerDate()
                 anchors[key] = next?.addingTimeInterval(-plant.wateringDays.interval) ?? .now
             }
@@ -90,11 +57,9 @@ final class PlantNotifications: NSObject, UNUserNotificationCenterDelegate {
             let due = Self.nextWateringDate(for: plant, anchor: anchor)
             let request = Self.makeRequest(for: plant, wateredAt: anchor)
             let cycle = request.content.userInfo["schedule"] as? String
-            // A delivered/dismissed overdue reminder must not reappear every app launch.
+          
             if current == nil, due <= .now, submitted[key] == cycle { continue }
-            // Do not restart the countdown on launch or when another plant changes.
-            if let current = existing.first(where: { $0.identifier == request.identifier }),
-               current.content.userInfo["schedule"] as? String == request.content.userInfo["schedule"] as? String {
+            if let current, current.content.userInfo["schedule"] as? String == cycle {
                 continue
             }
             try await center.add(request)
@@ -104,16 +69,51 @@ final class PlantNotifications: NSObject, UNUserNotificationCenterDelegate {
         }
     }
 
+    private func hasPermission(showMessage: Bool) async throws -> Bool {
+        var status = await center.notificationSettings().authorizationStatus
+        if status == .notDetermined {
+            _ = try await center.requestAuthorization(options: [.alert, .sound])
+            status = await center.notificationSettings().authorizationStatus
+        }
+        if status == .authorized || status == .provisional || status == .ephemeral {
+            return true
+        }
+        if showMessage {
+            message = "Your plant is saved. Enable notifications for Planto in Settings to receive watering reminders."
+            showingMessage = true
+        }
+        return false
+    }
+
+    private func removeDeletedPlantNotifications(plants: [Planto], pending: [UNNotificationRequest]) async {
+        var validIDs: [String] = []
+        for plant in plants {
+            validIDs.append(Self.identifier(for: plant.id))
+        }
+        var removedIDs: [String] = []
+        for request in pending {
+            if request.identifier.hasPrefix(Self.prefix) && !validIDs.contains(request.identifier) {
+                removedIDs.append(request.identifier)
+            }
+        }
+        center.removePendingNotificationRequests(withIdentifiers: removedIDs)
+
+        removedIDs = []
+        let delivered = await center.deliveredNotifications()
+        for notification in delivered {
+            let id = notification.request.identifier
+            if id.hasPrefix(Self.prefix) && !validIDs.contains(id) {
+                removedIDs.append(id)
+            }
+        }
+        center.removeDeliveredNotifications(withIdentifiers: removedIDs)
+    }
+
     #if DEBUG
     func sendTestNotification(for plant: Planto) async {
         do {
             activate()
-            let granted = try await center.requestAuthorization(options: [.alert, .sound])
-            guard granted else {
-                message = "Enable notifications for Planto in Settings, then try again."
-                showingMessage = true
-                return
-            }
+            guard try await hasPermission(showMessage: true) else { return }
             let original = Self.makeRequest(for: plant, wateredAt: nil)
             let request = UNNotificationRequest(
                 identifier: "planto.notification-test",
@@ -133,7 +133,7 @@ final class PlantNotifications: NSObject, UNUserNotificationCenterDelegate {
     }
 
     static func nextWateringDate(for plant: Planto, anchor: Date) -> Date {
-        Calendar.current.date(byAdding: .day, value: Int(plant.wateringDays.interval / 86_400), to: anchor)
+        Calendar.current.date(byAdding: .day, value: plant.wateringDays.numberOfDays, to: anchor)
             ?? anchor.addingTimeInterval(plant.wateringDays.interval)
     }
 
@@ -172,7 +172,6 @@ final class PlantNotifications: NSObject, UNUserNotificationCenterDelegate {
         let value = response.notification.request.content.userInfo["plantID"] as? String
         let id = value.flatMap(UUID.init(uuidString:))
         Task { @MainActor in
-            // UIKit's notification response completion must also run on the main thread.
             defer { completionHandler() }
             if isDefaultAction, let id {
                 selectedPlantID = id
