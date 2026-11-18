@@ -19,12 +19,12 @@ final class PlantNotifications: NSObject, UNUserNotificationCenterDelegate {
         center.delegate = self
     }
 
-    func synchronize(plants: [Planto], completionDates: [UUID: Date], requestPermission: Bool) {
+    func synchronize(plants: [Planto], requestPermission: Bool) {
         let previous = pendingWork
         pendingWork = Task {
             await previous?.value
             do {
-                try await updateReminders(plants: plants, completionDates: completionDates, requestPermission: requestPermission)
+                try await updateReminders(plants: plants, requestPermission: requestPermission)
             } catch {
                 message = "Your plant was saved, but its notification could not be scheduled. " + error.localizedDescription
                 showingMessage = true
@@ -32,40 +32,15 @@ final class PlantNotifications: NSObject, UNUserNotificationCenterDelegate {
         }
     }
 
-    private func updateReminders(plants: [Planto], completionDates: [UUID: Date], requestPermission: Bool) async throws {
+    private func updateReminders(plants: [Planto], requestPermission: Bool) async throws {
         let existing = await center.pendingNotificationRequests()
         await removeDeletedPlantNotifications(plants: plants, pending: existing)
         guard !plants.isEmpty else { return }
         guard try await hasPermission(showMessage: requestPermission) else { return }
 
-     
-        let defaults = UserDefaults.standard
-        var anchors = defaults.dictionary(forKey: "planto.notificationAnchors") as? [String: Date] ?? [:]
-        var submitted = defaults.dictionary(forKey: "planto.notificationCycles") as? [String: String] ?? [:]
-        let plantIDs = Set(plants.map { $0.id.uuidString })
-        anchors = anchors.filter { plantIDs.contains($0.key) }
-        submitted = submitted.filter { plantIDs.contains($0.key) }
         for plant in plants {
-            let key = plant.id.uuidString
-            let current = existing.first { $0.identifier == Self.identifier(for: plant.id) }
-            if anchors[key] == nil {
-                let next = (current?.trigger as? UNTimeIntervalNotificationTrigger)?.nextTriggerDate()
-                anchors[key] = next?.addingTimeInterval(-plant.wateringDays.interval) ?? .now
-            }
-            defaults.set(anchors, forKey: "planto.notificationAnchors")
-            let anchor = completionDates[plant.id] ?? anchors[key] ?? .now
-            let due = Self.nextWateringDate(for: plant, anchor: anchor)
-            let request = Self.makeRequest(for: plant, wateredAt: anchor)
-            let cycle = request.content.userInfo["schedule"] as? String
-          
-            if current == nil, due <= .now, submitted[key] == cycle { continue }
-            if let current, current.content.userInfo["schedule"] as? String == cycle {
-                continue
-            }
+            let request = Self.makeRequest(for: plant)
             try await center.add(request)
-            submitted[key] = cycle
-            defaults.set(submitted, forKey: "planto.notificationCycles")
-            center.removeDeliveredNotifications(withIdentifiers: [request.identifier])
         }
     }
 
@@ -114,7 +89,7 @@ final class PlantNotifications: NSObject, UNUserNotificationCenterDelegate {
         do {
             activate()
             guard try await hasPermission(showMessage: true) else { return }
-            let original = Self.makeRequest(for: plant, wateredAt: nil)
+            let original = Self.makeRequest(for: plant)
             let request = UNNotificationRequest(
                 identifier: "planto.notification-test",
                 content: original.content,
@@ -132,27 +107,18 @@ final class PlantNotifications: NSObject, UNUserNotificationCenterDelegate {
         prefix + id.uuidString
     }
 
-    static func nextWateringDate(for plant: Planto, anchor: Date) -> Date {
-        Calendar.current.date(byAdding: .day, value: plant.wateringDays.numberOfDays, to: anchor)
-            ?? anchor.addingTimeInterval(plant.wateringDays.interval)
-    }
-
-    static func makeRequest(for plant: Planto, wateredAt: Date?) -> UNNotificationRequest {
+    static func makeRequest(for plant: Planto) -> UNNotificationRequest {
         let content = UNMutableNotificationContent()
         content.title = "Planto"
         content.body = "Hey! let's water your plant"
         content.sound = .default
         content.threadIdentifier = plant.id.uuidString
-        content.userInfo = [
-            "plantID": plant.id.uuidString,
-            "schedule": "v2|\(plant.wateringDays.rawValue)|\(wateredAt?.timeIntervalSince1970 ?? 0)"
-        ]
-        let due = nextWateringDate(for: plant, anchor: wateredAt ?? .now)
-        let fireDate = max(due, Date.now.addingTimeInterval(1))
-        var components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: fireDate)
-        components.calendar = Calendar.current
-        components.timeZone = Calendar.current.timeZone
-        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+        content.userInfo = ["plantID": plant.id.uuidString]
+
+        var time = DateComponents()
+        time.hour = 14
+        time.minute = 0
+        let trigger = UNCalendarNotificationTrigger(dateMatching: time, repeats: true)
         return UNNotificationRequest(identifier: identifier(for: plant.id), content: content, trigger: trigger)
     }
 

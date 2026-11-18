@@ -28,7 +28,7 @@ struct WelcomeView: View {
                 Button(action: onSetReminder) {
                     Text("Set Plant Reminder")
                         .font(.system(size: 17, weight: .medium))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(PlantoStyle.primary)
                         .frame(width: 280, height: 42)
                         .glassEffect(.regular.tint(PlantoStyle.green).interactive(), in: Capsule())
                 }

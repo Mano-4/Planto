@@ -7,6 +7,8 @@ struct Planto: Codable, Identifiable, Equatable {
     var light: Light
     var wateringDays: WateringDays
     var waterAmount: WaterAmount
+    var reminderHour: Int?
+    var reminderMinute: Int?
 }
 
 enum Room: String, CaseIterable, Codable, Identifiable {

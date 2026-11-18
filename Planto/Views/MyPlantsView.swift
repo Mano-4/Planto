@@ -44,7 +44,7 @@ struct MyPlantsView: View {
                                             Label("Delete Reminder", systemImage: "trash")
                                                 .labelStyle(.iconOnly)
                                         }
-                                        .tint(.red)
+                                        .tint(PlantoStyle.destructive)
                                     }
                                 }
                             }
@@ -138,7 +138,7 @@ private struct PlantReminderRow: View {
                             Circle().fill(PlantoStyle.brightGreen)
                             Image(systemName: "checkmark")
                                 .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(.black)
+                                .foregroundStyle(PlantoStyle.background)
                         }
                     }
                     .frame(width: 25, height: 25)
@@ -162,8 +162,8 @@ private struct PlantReminderRow: View {
                             .font(.system(size: 28))
                             .foregroundStyle(isCompleted ? PlantoStyle.listSecondary : PlantoStyle.primary)
                         HStack(spacing: 10) {
-                            PlantTag(text: plant.light.rawValue, symbol: "sun.max", color: Color(red: 148 / 255, green: 144 / 255, blue: 100 / 255))
-                            PlantTag(text: plant.waterAmount.rawValue, symbol: "drop", color: Color(red: 146 / 255, green: 174 / 255, blue: 181 / 255))
+                            PlantTag(text: plant.light.rawValue, symbol: "sun.max", color: PlantoStyle.lightTag)
+                            PlantTag(text: plant.waterAmount.rawValue, symbol: "drop", color: PlantoStyle.waterTag)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
