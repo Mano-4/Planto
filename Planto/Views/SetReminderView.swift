@@ -5,7 +5,6 @@ struct SetReminderView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage("planto.hasStarted") private var hasStarted = false
     @State private var viewModel: SetReminderViewModel
-    @State private var confirmingDelete = false
 
     init(plant: Planto? = nil) {
         _viewModel = State(initialValue: SetReminderViewModel(plant: plant))
@@ -118,10 +117,10 @@ struct SetReminderView: View {
 
                     if viewModel.isEditing {
                         Button("Delete Reminder", role: .destructive) {
-                            confirmingDelete = true
+                            delete()
                         }
                         .font(.system(size: 17))
-                        .foregroundStyle(.red)
+                        .foregroundStyle(PlantoStyle.destructive)
                         .frame(maxWidth: .infinity)
                         .frame(height: 52)
                         .background(PlantoStyle.card, in: Capsule())
@@ -143,10 +142,6 @@ struct SetReminderView: View {
             Button("OK", role: .cancel) { }
         } message: {
             Text(viewModel.errorMessage)
-        }
-        .confirmationDialog("Delete this reminder?", isPresented: $confirmingDelete, titleVisibility: .visible) {
-            Button("Delete Reminder", role: .destructive, action: delete)
-            Button("Cancel", role: .cancel) { }
         }
     }
 

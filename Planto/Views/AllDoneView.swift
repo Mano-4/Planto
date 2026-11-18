@@ -11,7 +11,7 @@ struct AllDoneView: View {
                     .scaledToFit()
                     .frame(width: 164, height: 200)
                     .frame(width: 219, height: 227, alignment: .top)
-                    .background(Color(red: 12 / 255, green: 12 / 255, blue: 15 / 255), in: Ellipse())
+                    .background(PlantoStyle.mascotBackground, in: Ellipse())
                     .accessibilityHidden(true)
                     .padding(.top, 127)
 

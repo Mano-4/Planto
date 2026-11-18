@@ -14,7 +14,7 @@ struct ContentView: View {
 
             if let loadError = viewModel.loadError {
                 Text(loadError)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(PlantoStyle.destructive)
                     .padding()
             }
 
@@ -25,7 +25,7 @@ struct ContentView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black.ignoresSafeArea())
+        .background(PlantoStyle.background.ignoresSafeArea())
         .preferredColorScheme(.dark)
         .tint(PlantoStyle.green)
         .sheet(isPresented: $showingReminder, onDismiss: openNotification) {

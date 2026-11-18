@@ -1,19 +1,23 @@
 import SwiftUI
 
 enum PlantoStyle {
-    static let background = Color.black
-    static let surface = Color(red: 28 / 255, green: 28 / 255, blue: 30 / 255)
-    static let card = Color(red: 44 / 255, green: 44 / 255, blue: 46 / 255)
-    static let green = Color(red: 41 / 255, green: 118 / 255, blue: 95 / 255)
-    static let progress = Color(red: 89 / 255, green: 166 / 255, blue: 143 / 255)
-    static let progressTrack = Color(red: 38 / 255, green: 38 / 255, blue: 38 / 255)
-    static let tagBackground = Color(red: 24 / 255, green: 24 / 255, blue: 29 / 255)
-    static let divider = Color(red: 34 / 255, green: 34 / 255, blue: 36 / 255)
-    static let listSecondary = Color(red: 152 / 255, green: 152 / 255, blue: 152 / 255)
-    static let messageSecondary = Color(red: 145 / 255, green: 145 / 255, blue: 133 / 255)
-    static let brightGreen = Color(red: 40 / 255, green: 224 / 255, blue: 168 / 255)
-    static let secondary = Color(red: 142 / 255, green: 142 / 255, blue: 147 / 255)
-    static let primary = Color.white
+    static let background = Color("PlantoBackground")
+    static let surface = Color("PlantoSurface")
+    static let card = Color("PlantoCard")
+    static let green = Color("PlantoGreen")
+    static let progress = Color("PlantoProgress")
+    static let progressTrack = Color("PlantoProgressTrack")
+    static let tagBackground = Color("PlantoTagBackground")
+    static let divider = Color("PlantoDivider")
+    static let listSecondary = Color("PlantoListSecondary")
+    static let messageSecondary = Color("PlantoMessageSecondary")
+    static let brightGreen = Color("PlantoBrightGreen")
+    static let secondary = Color("PlantoSecondary")
+    static let primary = Color("PlantoPrimary")
+    static let destructive = Color("PlantoDestructive")
+    static let mascotBackground = Color("PlantoMascotBackground")
+    static let lightTag = Color("PlantoLightTag")
+    static let waterTag = Color("PlantoWaterTag")
 }
 
 struct PlantsHeader: View {
@@ -38,7 +42,7 @@ struct AddPlantButton: View {
         Button(action: action) {
             Image(systemName: "plus")
                 .font(.system(size: 25, weight: .regular))
-                .foregroundStyle(.white)
+                .foregroundStyle(PlantoStyle.primary)
                 .frame(width: 44, height: 44)
                 .glassEffect(.regular.tint(PlantoStyle.green).interactive(), in: Circle())
         }

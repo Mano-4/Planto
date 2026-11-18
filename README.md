@@ -6,8 +6,9 @@ Planto is an iPhone app that helps you care for your plants by organizing their 
 
 - Add, edit, and delete plant reminders.
 - Record each plant’s name, room, light needs, watering interval, and water amount.
-- Receive local watering notifications based on each plant’s watering schedule.
-- Update the next reminder after marking a plant as watered.
+- Receive a daily local watering notification for each plant at 2:00 PM in the device’s local time.
+- Watering intervals remain stored as plant-care information; notifications repeat daily independently of completion.
+- Delete a reminder directly from its edit screen without a confirmation dialog.
 - Check and uncheck plants and view daily completion progress.
 - Swipe left on a plant to delete its reminder.
 - Save plant data locally so it remains available after reopening the app.

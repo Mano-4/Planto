@@ -64,11 +64,7 @@ final class PlantoViewModel {
 
     func synchronizeNotifications(requestPermission: Bool = false) {
         guard loadError == nil else { return }
-        var completionDates: [UUID: Date] = [:]
-        for plant in plants {
-            completionDates[plant.id] = store.completionDate(for: plant)
-        }
-        notifications?.synchronize(plants: plants, completionDates: completionDates, requestPermission: requestPermission)
+        notifications?.synchronize(plants: plants, requestPermission: requestPermission)
     }
 
 }
